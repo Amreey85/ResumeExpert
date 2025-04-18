@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Expert Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-primary">
+                <i class="fas fa-file-alt"></i> Resume Expert Pro
+            </h1>
+            <p class="lead">AI-Powered Resume Analysis</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card shadow-lg mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="fas fa-cloud-upload-alt"></i> Upload Resumes</h4>
+            </div>
+            <div class="card-body">
+                <input type="file" id="resumeUpload" class="form-control" multiple accept=".pdf,.docx,.txt">
+                <button onclick="uploadFiles()" class="btn btn-success mt-3">
+                    <i class="fas fa-upload"></i> Upload Files
+                </button>
+                <div id="uploadStatus" class="mt-2 text-muted"></div>
+            </div>
+        </div>
+
+        <!-- Analysis Controls -->
+        <div class="card shadow-lg mb-4">
+            <div class="card-header bg-info text-white">
+                <h4><i class="fas fa-cogs"></i> Analysis Settings</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Keywords (comma separated)</label>
+                        <input type="text" id="keywords" class="form-control" 
+                               placeholder="e.g., Project Management, PMO, Insurance">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">AI Mode</label>
+                        <select id="aiMode" class="form-select">
+                            <option value="offline">Offline Mode</option>
+                            <option value="deepseek">DeepSeek AI</option>
+                            <option value="chatgpt">ChatGPT</option>
+                            <option value="Gemini">Gemini</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="startAnalysis()" class="btn btn-danger mt-3">
+                    <i class="fas fa-magic"></i> Analyze Resumes
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="d-none">
+            <h3 class="mb-3"><i class="fas fa-chart-bar"></i> Analysis Results</h3>
+            <div id="results" class="row g-4"></div>
+        </div>
+    </div>
+
+    <script>
+        let uploadedResumes = [];
+        
+        async function uploadFiles() {
+            const files = document.getElementById('resumeUpload').files;
+            const status = document.getElementById('uploadStatus');
+            status.innerHTML = `<div class="spinner-border text-primary" role="status">
+                                  <span class="visually-hidden">Loading...</span>
+                                </div> Uploading ${files.length} files...`;
+
+            const formData = new FormData();
+            for (const file of files) formData.append('resumes', file);
+
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+                uploadedResumes = await response.json();
+                status.innerHTML = `<i class="fas fa-check-circle text-success"></i> 
+                                   Successfully uploaded ${uploadedResumes.length} resumes`;
+            } catch (error) {
+                status.innerHTML = `<i class="fas fa-times-circle text-danger"></i> Error: ${error.message}`;
+            }
+        }
+
+        async function startAnalysis() {
+            const keywords = document.getElementById('keywords').value.split(',').map(k => k.trim());
+            const aiMode = document.getElementById('aiMode').value;
+            
+            if (!keywords.length) return alert('Please enter keywords');
+            
+            document.getElementById('resultsSection').classList.remove('d-none');
+            document.getElementById('results').innerHTML = 
+                `<div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                 </div>`;
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        resumes: uploadedResumes,
+                        keywords: keywords,
+                        ai_type: aiMode
+                    })
+                });
+                
+                const results = await response.json();
+                displayResults(results);
+            } catch (error) {
+                alert(`Analysis failed: ${error.message}`);
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('results');
+            container.innerHTML = results.map(resume => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">${resume.name}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="progress mb-3" style="height: 25px;">
+                                <div class="progress-bar bg-gradient 
+                                          ${resume.score > 75 ? 'bg-success' : resume.score > 50 ? 'bg-warning' : 'bg-danger'}" 
+                                     style="width: ${resume.score}%">
+                                    ${resume.score}%
+                                </div>
+                            </div>
+                            <p class="card-text">${resume.details}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

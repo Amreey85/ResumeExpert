@@ -1,0 +1,22 @@
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.card {
+    border-radius: 15px;
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.bg-gradient {
+    background-image: linear-gradient(45deg, #17a2b8, #007bff);
+}
+
+.progress-bar {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
