@@ -1,4 +1,3 @@
-from flask import Flask, request, render_template, jsonify
 import os
 import PyPDF2
 import docx
